@@ -11,25 +11,26 @@ Built by [JDE-Projects](https://github.com/JDE-Projects).
 - Sortable results: site, name, MAC, IP, model, type, status, firmware, uptime.
 - Select one or more devices and delete them, with a confirmation step.
 - CSV export of the current results.
+- Checks the Releases page for a newer version (manual and a quiet check at startup).
 - Optional debug log, off by default, with credentials redacted.
 - Secrets are never saved (memory only, wiped on disconnect).
 
 ## How it works
 - Backend: Python standard library (urllib) against the controller API.
-- Window: pywebview on the Qt backend, UI in `simple_una_device_manager-UI.html`.
+- Window: pywebview on the Qt backend (PySide6), UI in `simple_una_device_manager-UI.html`.
 
 ## Download and run
-Grab the latest `Simple UNA Device Manager.exe` from the Releases page and
-double-click it. No Python or setup required. Windows only.
+Grab the latest release from the Releases page, unzip the folder, and run
+`Simple UNA Device Manager.exe` inside it. No Python or setup required. Windows only.
 Unsigned, so SmartScreen may warn the first time: More info > Run anyway.
 
 ## Build from source (optional)
 - Python 3 on PATH.
-- `pip install pywebview PyQt6 PyQt6-WebEngine`
+- `pip install pywebview PySide6 pyinstaller` (keep PyQt6 uninstalled).
 - Keep `simple_una_device_manager.py`, `simple_una_device_manager-UI.html`, the
   `fonts/` folder, the `.ico`, `.png`, and `-splash.png` together.
 - Run from source: `python simple_una_device_manager.py`
-- Build the .exe: `Build_Simple_UNA_Device_Manager.bat` -> `dist\Simple UNA Device Manager.exe`
+- Build the .exe: `Build_Simple_UNA_Device_Manager.bat` -> `dist\Simple UNA Device Manager\Simple UNA Device Manager.exe`
 
 ## Using it
 1. Enter the controller URL, username, and password (a local admin account,
@@ -56,6 +57,8 @@ direction, and real-world testing were directed by me. The code was written
 and revised with an AI assistant against that direction.
 
 ## License
-Released under the MIT License. Free to use, modify, and distribute; keep the
+Released under the PolyForm Noncommercial License 1.0.0 (see
+[LICENSE](LICENSE)). Free for personal and any noncommercial use, modification,
+and noncommercial redistribution; commercial use is not permitted. Keep the
 copyright notice; no warranty. This tool bundles third-party code; see
 [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
