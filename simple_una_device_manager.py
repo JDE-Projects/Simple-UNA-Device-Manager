@@ -12,20 +12,36 @@ Built with AI assistance, directed by JDE-Projects.
 """
 
 import os
+
+# Force the LGPL Qt binding (PySide6) so qtpy never selects PyQt6 (GPL),
+# both at build time and at runtime. Set before importing webview/qtpy.
+os.environ.setdefault("QT_API", "pyside6")
+
+import re
 import sys
 import ssl
 import csv
 import json
 import time
+import socket
 import threading
 import traceback
+import webbrowser
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.request import Request, HTTPCookieProcessor, build_opener, HTTPSHandler
+from urllib.request import (Request, HTTPCookieProcessor, build_opener,
+                            HTTPSHandler, urlopen)
 from urllib.error import URLError, HTTPError
 from http.cookiejar import CookieJar
 
 import webview
+
+
+# ───────────────────────── identity ─────────────────────────
+APP_VERSION = "1.0.0"          # version of record; equals the latest release tag (no "v")
+GITHUB_OWNER = "JDE-Projects"
+GITHUB_REPO = "Simple-UNA-Device-Manager"
+RELEASES_PAGE = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases"
 
 
 # ───────────────────────── paths ─────────────────────────
@@ -97,6 +113,53 @@ def redact_payload(payload):
     return out
 
 
+# ─────────────── plain-language errors ───────────────
+# Never surface a raw [Errno N] or exception text to the user. Map to a short
+# message and send the full detail to the debug log.
+def _reason_message(reason):
+    text = str(reason).lower()
+    if isinstance(reason, socket.timeout) or "timed out" in text or "timeout" in text:
+        return "The controller did not respond in time. Check the URL and port are reachable."
+    if (isinstance(reason, socket.gaierror) or "getaddrinfo" in text
+            or "name or service not known" in text or "nodename nor servname" in text):
+        return "Could not find that host. Check the controller URL."
+    if "refused" in text:
+        return "The connection was refused. Check the controller is running and the port is correct."
+    if "certificate" in text or "ssl" in text:
+        return "There was a secure-connection problem reaching the controller."
+    if "unreachable" in text or "no route" in text:
+        return "The controller could not be reached on the network."
+    return "Could not reach the controller. Check the URL, port, and your network."
+
+
+def friendly_error(exc, context=""):
+    """Return a short, user-facing message. Full detail goes to the debug log."""
+    debug.log(f"ERROR detail{(' - ' + context) if context else ''}", traceback.format_exc())
+    if isinstance(exc, HTTPError):
+        if exc.code in (401, 403):
+            return ("Login failed. Check the username and password, and that this is a "
+                    "local admin account (not SSO).")
+        if exc.code == 404:
+            return "The controller did not recognise that address. Check the URL."
+        return f"The controller returned an error (HTTP {exc.code})."
+    if isinstance(exc, URLError):
+        return _reason_message(getattr(exc, "reason", exc))
+    if isinstance(exc, OSError):
+        return _reason_message(exc)
+    return "Something went wrong. Turn on the debug log and retry to capture details."
+
+
+def _version_gt(a, b):
+    """True if version string a is newer than b (numeric, dot/dash separated)."""
+    def parts(v):
+        return [int(p) if p.isdigit() else 0 for p in re.split(r"[.\-]", v) if p != ""]
+    pa, pb = parts(a), parts(b)
+    n = max(len(pa), len(pb))
+    pa += [0] * (n - len(pa))
+    pb += [0] * (n - len(pb))
+    return pa > pb
+
+
 # ───────────────────────── label maps ─────────────────────────
 STATE_LABELS = {
     0: "Offline", 1: "Online", 2: "Pending Adoption", 4: "Updating",
@@ -141,7 +204,46 @@ class Api:
         self._window = w
 
     def get_meta(self):
-        return {"search_fields": SEARCH_FIELDS, "default_field": "MAC", "hints": HINT_TEXTS}
+        return {"search_fields": SEARCH_FIELDS, "default_field": "MAC",
+                "hints": HINT_TEXTS, "version": APP_VERSION}
+
+    # ─── update check (GitHub Releases, stdlib only, no token) ───
+    def check_update(self, manual=False):
+        """Compare the latest published release tag to APP_VERSION.
+        Quiet on any failure unless the user asked (manual=True)."""
+        url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+        debug.log("UPDATE check ->", url)
+        try:
+            req = Request(url, headers={"Accept": "application/vnd.github+json",
+                                        "User-Agent": "Simple-UNA-Device-Manager"})
+            with urlopen(req, timeout=8, context=ssl.create_default_context()) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            latest = (data.get("tag_name") or "").lstrip("vV").strip()
+            page = data.get("html_url") or RELEASES_PAGE
+            debug.log("UPDATE check <-", {"latest": latest, "current": APP_VERSION})
+            if latest and _version_gt(latest, APP_VERSION):
+                return {"ok": True, "update": True, "latest": latest,
+                        "current": APP_VERSION, "url": page}
+            return {"ok": True, "update": False, "current": APP_VERSION, "latest": latest}
+        except HTTPError as e:
+            # 404 = repo still private or no releases yet. Stay quiet.
+            debug.log("UPDATE check HTTPError", str(e.code))
+            return {"ok": False, "quiet": True,
+                    "error": "No published releases found yet."}
+        except Exception as e:
+            debug.log("UPDATE check failed", str(e))
+            return {"ok": False, "quiet": not manual,
+                    "error": "Could not reach GitHub to check for updates."}
+
+    def open_url(self, url):
+        """Open a link in the system browser (used by the update banner)."""
+        try:
+            if isinstance(url, str) and url.startswith(("http://", "https://")):
+                webbrowser.open(url)
+                return {"ok": True}
+        except Exception as e:
+            debug.log("open_url failed", str(e))
+        return {"ok": False}
 
     def set_debug(self, enabled):
         ok = debug.set_enabled(enabled)
@@ -223,7 +325,7 @@ class Api:
         except Exception as e:
             self.connected = False
             debug.log("CONNECT failed", str(e))
-            return {"ok": False, "error": str(e)}
+            return {"ok": False, "error": friendly_error(e, "connect")}
 
     def disconnect(self):
         self._stop_keepalive()
@@ -324,7 +426,7 @@ class Api:
             return {"ok": True, "rows": rows, "failed_sites": failed}
         except Exception as e:
             debug.log("SEARCH exception", traceback.format_exc())
-            return {"ok": False, "error": str(e)}
+            return {"ok": False, "error": friendly_error(e, "search")}
 
     def _search_mac(self, term_lower, total):
         # pass 1: cheap device-basic scan to find sites with a match
@@ -433,7 +535,7 @@ class Api:
                 success.append(d.get("mac"))
                 debug.log("DELETED", f"{d.get('name')} ({d.get('mac')}) @ {d.get('site_id')}")
             except Exception as e:
-                errors.append(f"{d.get('name')} ({d.get('mac')}): {e}")
+                errors.append(f"{d.get('name')} ({d.get('mac')}): {friendly_error(e, 'delete')}")
                 debug.log("DELETE error", f"{d.get('mac')}: {e}")
         return {"ok": True, "success": success, "errors": errors}
 
@@ -464,7 +566,8 @@ class Api:
             debug.log("EXPORT", f"{len(rows)} rows -> {path}")
             return {"ok": True, "path": path, "count": len(rows)}
         except Exception as e:
-            return {"ok": False, "error": str(e)}
+            debug.log("EXPORT failed", traceback.format_exc())
+            return {"ok": False, "error": "Could not save the CSV file. Check the location and try again."}
 
 
 # ───────────────────────── splash ─────────────────────────

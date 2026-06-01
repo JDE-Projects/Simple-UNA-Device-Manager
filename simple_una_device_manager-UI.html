@@ -102,6 +102,21 @@
   .toggle.on .switch{ background:var(--accent-2); border-color:var(--accent); }
   .toggle.on .switch::after{ left:17px; background:#042b27; }
   .count{ color:var(--text); font-weight:500; }
+  .statusbar .right{ display:flex; align-items:center; gap:14px; }
+  .ver{ color:var(--text-faint); font-family:"JetBrains Mono",monospace; font-size:11px; }
+  .link{ color:var(--text-dim); cursor:pointer; }
+  .link:hover{ color:var(--accent); }
+
+  /* update banner */
+  .updatebar{ display:none; align-items:center; gap:14px; background:linear-gradient(180deg,var(--panel),var(--bg-2));
+    border:1px solid var(--accent); border-radius:var(--radius); padding:10px 16px; box-shadow:0 0 0 3px rgba(77,214,193,.08); }
+  .updatebar.show{ display:flex; }
+  .updatebar .ub-text{ flex:1 1 auto; font-size:13px; color:var(--text); }
+  .updatebar .ub-text b{ color:var(--accent); }
+  .updatebar .ub-btn{ padding:7px 14px; }
+  .updatebar .ub-close{ cursor:pointer; color:var(--text-dim); font-size:18px; line-height:1; padding:0 4px; }
+  .updatebar .ub-close:hover{ color:var(--text); }
+
 
   /* modal: solid dimmed background (no backdrop blur, per Qt) */
   #modal{ position:fixed; inset:0; background:rgba(6,9,14,.78); display:none; align-items:center; justify-content:center; z-index:60; }
@@ -129,6 +144,12 @@
 </head>
 <body>
 <div class="app">
+
+  <div id="updateBar" class="updatebar">
+    <span id="ubText" class="ub-text"></span>
+    <button id="ubView" class="btn-primary ub-btn">View release</button>
+    <span id="ubClose" class="ub-close" title="Dismiss">&times;</span>
+  </div>
 
   <div class="panel">
     <h2 class="panel-title">Controller Connection</h2>
@@ -179,8 +200,12 @@
       <div id="debugToggle" class="toggle" title="Write a Debug_Log_*.txt next to the app while on">
         <span class="switch"></span><span>Debug log</span>
       </div>
+      <span id="updateCheck" class="link">Check for updates</span>
     </div>
-    <span id="countText" class="count"></span>
+    <div class="right">
+      <span id="verTag" class="ver"></span>
+      <span id="countText" class="count"></span>
+    </div>
   </div>
 </div>
 
@@ -202,6 +227,7 @@
 <script>
   let API=null, META=null, connected=false, searching=false;
   let rows=[], selected=new Set(), sortCol=null, sortDir=1;
+  let updateUrl="";
   const COLS=[
     ["site","Site"],["site_id","Site ID"],["name","Name"],["mac","MAC"],["ip","IP"],
     ["model","Model"],["type","Type"],["status","Status"],["firmware","Firmware"],["uptime","Uptime"]
@@ -217,6 +243,7 @@
     META=await API.get_meta();
     const fs=$("field"); META.search_fields.forEach(f=>{ const o=document.createElement("option"); o.value=f; o.textContent=f; if(f===META.default_field)o.selected=true; fs.appendChild(o); });
     updateHint(); buildHead();
+    $("verTag").textContent = META.version ? "v"+META.version : "";
     fs.onchange=updateHint;
     $("connBtn").onclick=onConn;
     $("searchBtn").onclick=onSearch;
@@ -226,8 +253,24 @@
     $("cancelDel").onclick=()=>$("modal").classList.remove("show");
     $("confirmDel").onclick=doDelete;
     $("debugToggle").onclick=onDebug;
+    $("updateCheck").onclick=()=>checkUpdate(true);
+    $("ubView").onclick=()=>{ if(updateUrl) API.open_url(updateUrl); };
+    $("ubClose").onclick=()=>$("updateBar").classList.remove("show");
     $("term").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("searchBtn").disabled) onSearch(); });
     $("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") onConn(); });
+    checkUpdate(false);   // quiet check on startup; silent when offline or repo private
+  }
+
+  async function checkUpdate(manual){
+    const r=await API.check_update(!!manual);
+    if(r.ok && r.update){
+      updateUrl=r.url||"";
+      $("ubText").innerHTML="A newer version is available: <b>v"+r.latest+"</b> (you have v"+r.current+").";
+      $("updateBar").classList.add("show");
+    } else if(manual){
+      if(r.ok && !r.update) toast("You're on the latest version (v"+r.current+").");
+      else toast(r.error||"Could not check for updates.",true);
+    }
   }
   function updateHint(){ $("hint").textContent=META.hints[$("field").value]||""; }
 

@@ -3,22 +3,31 @@ echo =====================================================
 echo  Simple UNA Device Manager - Build Script
 echo =====================================================
 echo.
-echo Installing build + runtime dependencies...
-pip install pyinstaller pywebview PyQt6 PyQt6-WebEngine
+
+REM Use the LGPL Qt binding (PySide6), never PyQt6 (GPL).
+set QT_API=pyside6
+
+echo Removing PyQt6 if present (keeps PySide6 as the bundled binding)...
+pip uninstall -y PyQt6 PyQt6-Qt6 PyQt6-WebEngine PyQt6-WebEngine-Qt6 >nul 2>&1
 echo.
-echo Building executable...
-pyinstaller --onefile --windowed --name "Simple UNA Device Manager" ^
+echo Installing build + runtime dependencies...
+pip install pyinstaller pywebview PySide6
+echo.
+echo Building executable (onedir, closed / noncommercial build)...
+pyinstaller --windowed --onedir --name "Simple UNA Device Manager" ^
   --icon "simple_una_device_manager.ico" ^
   --splash "simple_una_device_manager-splash.png" ^
   --add-data "simple_una_device_manager-UI.html;." ^
   --add-data "simple_una_device_manager.png;." ^
   --add-data "fonts;fonts" ^
-  --collect-all PyQt6 ^
+  --collect-all PySide6 ^
   --collect-all qtpy ^
   simple_una_device_manager.py
 echo.
 echo =====================================================
-echo  Done. Your .exe is in:  dist\Simple UNA Device Manager.exe
+echo  Done. Your app folder is in:
+echo    dist\Simple UNA Device Manager\
+echo  Run: dist\Simple UNA Device Manager\Simple UNA Device Manager.exe
 echo =====================================================
 echo.
 pause
