@@ -160,6 +160,11 @@
       </div>
       <div class="conn-field"><label class="field-label">Username</label><input id="user" type="text" spellcheck="false" autocomplete="off"></div>
       <div class="conn-field"><label class="field-label">Password</label><input id="pass" type="password" autocomplete="off"></div>
+      <div class="conn-field" style="display:flex;align-items:flex-end;">
+        <label class="field-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;">
+          <input id="verifyTls" type="checkbox" style="margin:0;">Verify TLS certificate
+        </label>
+      </div>
       <button id="connBtn" class="btn-primary">Connect</button>
       <div class="conn-status"><span id="connDot" class="dot"></span><span id="connText">Not connected</span></div>
     </div>
@@ -285,7 +290,7 @@
       onClear(); return;
     }
     $("connBtn").disabled=true; $("connBtn").textContent="Connecting..."; setConn("busy","Connecting...");
-    const r=await API.connect($("url").value,$("user").value,$("pass").value);
+    const r=await API.connect($("url").value,$("user").value,$("pass").value,$("verifyTls").checked);
     $("connBtn").disabled=false;
     if(!r.ok){ setConn("err","Connection failed"); $("connBtn").textContent="Connect"; toast(r.error||"Connection failed",true); return; }
     connected=true; setConn("live","Connected \u2014 "+r.site_count+" site(s)");

@@ -126,7 +126,8 @@ def _reason_message(reason):
     if "refused" in text:
         return "The connection was refused. Check the controller is running and the port is correct."
     if "certificate" in text or "ssl" in text:
-        return "There was a secure-connection problem reaching the controller."
+        return ("There was a secure-connection problem reaching the controller. "
+                "If it uses a self-signed certificate, turn off 'Verify TLS certificate'.")
     if "unreachable" in text or "no route" in text:
         return "The controller could not be reached on the network."
     return "Could not reach the controller. Check the URL, port, and your network."
@@ -191,6 +192,7 @@ class Api:
         self.opener = None
         self.cookie_jar = None
         self.ssl_ctx = None
+        self.verify_tls = False   # off by default: self-hosted controllers use self-signed certs
         self.sites = []
         self.controller_url = ""
         self._cred_user = ""
@@ -253,8 +255,11 @@ class Api:
     # ─── connection ───
     def _create_opener(self):
         self.ssl_ctx = ssl.create_default_context()
-        self.ssl_ctx.check_hostname = False
-        self.ssl_ctx.verify_mode = ssl.CERT_NONE
+        if not self.verify_tls:
+            # Default: self-hosted controllers ship a self-signed certificate,
+            # so verification is off unless the user opts in.
+            self.ssl_ctx.check_hostname = False
+            self.ssl_ctx.verify_mode = ssl.CERT_NONE
         self.cookie_jar = CookieJar()
         self.opener = build_opener(HTTPSHandler(context=self.ssl_ctx),
                                    HTTPCookieProcessor(self.cookie_jar))
@@ -304,12 +309,13 @@ class Api:
                 return self._api_request(path, method, data, retry=False)
             raise
 
-    def connect(self, url, user, pwd):
+    def connect(self, url, user, pwd, verify=False):
         url = (url or "").strip().rstrip("/")
         user = (user or "").strip()
         pwd = (pwd or "").strip()
         if not url or not user or not pwd:
             return {"ok": False, "error": "Please fill in all connection fields."}
+        self.verify_tls = bool(verify)
         self.controller_url = url
         self._cred_user = user
         self._cred_pass = pwd
