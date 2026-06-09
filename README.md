@@ -62,3 +62,5 @@ Released under the PolyForm Noncommercial License 1.0.0 (see
 and noncommercial redistribution; commercial use is not permitted. Keep the
 copyright notice; no warranty. This tool bundles third-party code; see
 [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
+
+For commercial licensing, open a [GitHub issue](https://github.com/JDE-Projects/Simple-UNA-Device-Manager/issues) with the title "Commercial License Inquiry".
