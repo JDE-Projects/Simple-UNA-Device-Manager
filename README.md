@@ -22,9 +22,26 @@ If you enjoyed this project and would like to buy me a coffee, check out my [Ko-
 - Window: pywebview on the Qt backend (PySide6), UI in `simple_una_device_manager-UI.html`.
 
 ## Download and run
-Grab the latest release from the Releases page, unzip the folder, and run
-`Simple UNA Device Manager.exe` inside it. No Python or setup required. Windows only.
-Unsigned, so SmartScreen may warn the first time: More info > Run anyway.
+Two ways to get it from the Releases page - pick one:
+- **Installer (recommended):** download `SimpleUNADeviceManager-vX.Y.Z-setup.exe` and
+  run it. Installs the app, adds a Start menu shortcut, and can be removed later
+  from Add or Remove Programs. Installs just for you by default (no admin); you can
+  choose all users during setup.
+- **Portable .zip:** download `SimpleUNADeviceManager-vX.Y.Z.zip`, extract it, and run
+  `Simple UNA Device Manager.exe` from inside the extracted folder. No install - good for
+  a locked-down PC or a USB stick. Keep the folder together.
+
+Windows only, no Python or setup required. Unsigned, so SmartScreen may warn the
+first time: More info > Run anyway.
+
+## Updating
+
+Simple UNA Device Manager doesn't update itself. The bottom bar has a **Check for updates** button that tells you when a newer release is out; when it does, get the new version from the [Releases](../../releases) page the same way you first installed it.
+
+- **Installer:** download the new `SimpleUNADeviceManager-vX.Y.Z-setup.exe` and run it. It installs over your current copy and keeps your saved light/dark theme preference.
+- **Portable .zip:** download and extract the new `SimpleUNADeviceManager-vX.Y.Z.zip`. To keep your light/dark theme choice, copy `simple_una_device_manager.pref` from the old folder into the new one.
+
+Your controller login is never stored, so there's nothing else to carry over.
 
 ## Verify this download (optional)
 This release was built on GitHub from this public source - not on a personal

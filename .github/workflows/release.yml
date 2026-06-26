@@ -14,3 +14,4 @@ jobs:
       dist_subfolder: "Simple UNA Device Manager"
       python_version: "3.14"
       build_command: "Build_Simple_UNA_Device_Manager.bat"
+      app_id: "e963167d-ad13-4d84-9656-6978ac30ffdd"   # stable installer GUID; generated once, never change

@@ -1,0 +1,3 @@
+Launch Simple UNA Device Manager from the Start menu.
+Enter your UniFi controller URL and a local admin login, then Connect.
+Search by MAC, name, or IP across all sites, then select and delete orphaned devices.
