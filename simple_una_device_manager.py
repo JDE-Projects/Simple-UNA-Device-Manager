@@ -252,6 +252,33 @@ class Api:
         debug.log("Debug logging enabled" if enabled and ok else "Debug logging disabled")
         return {"ok": ok, "enabled": debug.is_enabled()}
 
+    # ─── theme preference (local .pref file next to the app) ───
+    def _pref_path(self):
+        return os.path.join(exe_dir(), "simple_una_device_manager.pref")
+
+    def _load_theme(self):
+        try:
+            with open(self._pref_path(), "r", encoding="utf-8") as f:
+                theme = json.load(f).get("theme")
+            return theme if theme in ("dark", "light") else "dark"
+        except Exception:
+            return "dark"
+
+    def get_theme(self):
+        return self._load_theme()
+
+    def save_theme(self, theme):
+        if theme not in ("dark", "light"):
+            return {"ok": False}
+        try:
+            with open(self._pref_path(), "w", encoding="utf-8") as f:
+                json.dump({"theme": theme}, f)
+            debug.log(f"Theme set to {theme}")
+            return {"ok": True}
+        except Exception as e:
+            debug.log("Could not save theme pref", str(e))
+            return {"ok": False}
+
     # ─── connection ───
     def _create_opener(self):
         self.ssl_ctx = ssl.create_default_context()
