@@ -19,8 +19,23 @@
     --border:#20293a; --border-2:#2b3650;
     --text:#dfe7f2; --text-dim:#8a98b0; --text-faint:#5a6678;
     --accent:#4dd6c1; --accent-2:#2bb6a3; --glow:rgba(77,214,193,0.35);
-    --amber:#f0b860; --red:#ff6b7a; --green:#5ce39b; --blue:#6db3ff;
-    --radius:14px; --radius-sm:9px;
+    --amber:#f0b860; --red:#ff6b7a; --green:#5ce39b; --blue:#6db3ff; --purple:#b48cff;
+    --radius:14px; --radius-sm:9px; --btn-text:#042b27;
+  }
+  /* JDE Light Teal tokens (opt-in via body.light) */
+  body.light{
+    --bg:#eef3f4; --bg-2:#e4ebed; --panel:#ffffff; --panel-2:#f5f9fa;
+    --border:#d3dee1; --border-2:#bcccd0;
+    --text:#16212c; --text-dim:#4f606d; --text-faint:#8593a0;
+    --accent:#178577; --accent-2:#0f6b5f; --glow:rgba(23,133,119,0.20);
+    --amber:#e0900a; --red:#cf3b50; --green:#1c9560; --blue:#2b6fd0; --purple:#6f48cf;
+    --btn-text:#ffffff;
+  }
+  body.light{
+    background:
+      radial-gradient(900px 500px at 12% -10%, rgba(23,133,119,0.08), transparent 60%),
+      radial-gradient(800px 500px at 100% 0%, rgba(43,111,208,0.06), transparent 55%),
+      var(--bg);
   }
   *{ box-sizing:border-box; }
   html,body{ height:100%; margin:0; }
@@ -34,6 +49,19 @@
   }
   .app{ display:flex; flex-direction:column; height:100vh; padding:16px 18px 10px; gap:12px; }
   .panel{ background:linear-gradient(180deg,var(--panel),var(--bg-2)); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .app-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .app-header .title h1{ font-size:22px; font-weight:700; margin:0; letter-spacing:-.01em; }
+  .app-header .title .by{ display:block; margin-top:4px; font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--text-dim); }
+  .app-header .title .ghl{ display:inline-block; margin-top:2px; font-family:"JetBrains Mono",monospace; font-size:10.5px; color:var(--accent); text-decoration:none; cursor:pointer; }
+  .app-header .title .ghl:hover{ text-decoration:underline; }
+  .theme-btn{ background:transparent; border:1px solid var(--border-2); border-radius:var(--radius-sm);
+    width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-dim); transition:.15s; flex:0 0 auto; }
+  .theme-btn:hover{ border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+  .theme-btn svg{ width:18px; height:18px; }
+  .icon-moon{ display:none; }
+  body.light .icon-sun{ display:none; }
+  body.light .icon-moon{ display:block; }
   .panel-title{ font-weight:600; font-size:14px; margin:0 0 12px; }
   .field-label{ display:block; font-size:11px; color:var(--text-dim); margin-bottom:5px; letter-spacing:.3px; }
 
@@ -62,7 +90,7 @@
 
   button{ font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; border-radius:var(--radius-sm);
     padding:9px 18px; border:1px solid transparent; transition:transform .15s, border-color .15s, box-shadow .15s, background .15s; }
-  .btn-primary{ color:#042b27; background:linear-gradient(180deg,var(--accent),var(--accent-2)); box-shadow:0 2px 14px var(--glow); }
+  .btn-primary{ color:var(--btn-text); background:linear-gradient(180deg,var(--accent),var(--accent-2)); box-shadow:0 2px 14px var(--glow); }
   .btn-primary:hover:not(:disabled){ transform:translateY(-1px); box-shadow:0 4px 18px var(--glow); }
   .btn-danger{ color:#2b0d10; background:linear-gradient(180deg,#ff8a96,var(--red)); box-shadow:0 2px 14px rgba(255,107,122,.3); }
   .btn-danger:hover:not(:disabled){ transform:translateY(-1px); }
@@ -94,7 +122,7 @@
   .st.ok{ color:var(--green); } .st.off{ color:var(--text-faint); } .st.warn{ color:var(--amber); } .st.bad{ color:var(--red); }
   .empty{ flex:1 1 auto; display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:14px; padding:40px; text-align:center; }
 
-  .statusbar{ display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--text-dim); padding:0 2px; }
+  .statusbar{ display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--text-dim); padding:0 2px; position:relative; }
   .statusbar .left{ display:flex; align-items:center; gap:14px; }
   .toggle{ display:inline-flex; align-items:center; gap:8px; cursor:pointer; color:var(--text-dim); }
   .switch{ width:34px; height:18px; border-radius:10px; background:var(--panel-2); border:1px solid var(--border-2); position:relative; transition:background .15s,border-color .15s; }
@@ -104,18 +132,17 @@
   .count{ color:var(--text); font-weight:500; }
   .statusbar .right{ display:flex; align-items:center; gap:14px; }
   .ver{ color:var(--text-faint); font-family:"JetBrains Mono",monospace; font-size:11px; }
-  .link{ color:var(--text-dim); cursor:pointer; }
-  .link:hover{ color:var(--accent); }
-
-  /* update banner */
-  .updatebar{ display:none; align-items:center; gap:14px; background:linear-gradient(180deg,var(--panel),var(--bg-2));
-    border:1px solid var(--accent); border-radius:var(--radius); padding:10px 16px; box-shadow:0 0 0 3px rgba(77,214,193,.08); }
-  .updatebar.show{ display:flex; }
-  .updatebar .ub-text{ flex:1 1 auto; font-size:13px; color:var(--text); }
-  .updatebar .ub-text b{ color:var(--accent); }
-  .updatebar .ub-btn{ padding:7px 14px; }
-  .updatebar .ub-close{ cursor:pointer; color:var(--text-dim); font-size:18px; line-height:1; padding:0 4px; }
-  .updatebar .ub-close:hover{ color:var(--text); }
+  #updateNotice{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--text-dim);
+    white-space:nowrap; max-width:50%; overflow:hidden; text-overflow:ellipsis;
+    opacity:0; pointer-events:none; transition:opacity .3s; }
+  #updateNotice.show{ opacity:1; pointer-events:auto; }
+  #updateNotice a{ color:var(--accent); text-decoration:none; cursor:pointer; }
+  #updateNotice a:hover{ text-decoration:underline; }
+  .btn-update{ font-family:inherit; font-size:11.5px; font-weight:500; color:var(--text-dim);
+    background:transparent; border:1px solid var(--border-2); border-radius:var(--radius-sm);
+    padding:4px 10px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .btn-update:hover{ border-color:var(--accent); color:var(--text); transform:translateY(-1px); }
 
 
   /* modal: solid dimmed background (no backdrop blur, per Qt) */
@@ -145,11 +172,22 @@
 <body>
 <div class="app">
 
-  <div id="updateBar" class="updatebar">
-    <span id="ubText" class="ub-text"></span>
-    <button id="ubView" class="btn-primary ub-btn">View release</button>
-    <span id="ubClose" class="ub-close" title="Dismiss">&times;</span>
-  </div>
+  <header class="app-header">
+    <div class="title">
+      <h1>Simple UNA Device Manager</h1>
+      <div class="by">by JDE-Projects</div>
+      <span class="ghl" id="ghLink">github.com/JDE-Projects</span>
+    </div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+    </button>
+  </header>
 
   <div class="panel">
     <h2 class="panel-title">Controller Connection</h2>
@@ -201,15 +239,16 @@
 
   <div class="statusbar">
     <div class="left">
-      <span id="statusText"></span>
       <div id="debugToggle" class="toggle" title="Write a Debug_Log_*.txt next to the app while on">
         <span class="switch"></span><span>Debug log</span>
       </div>
-      <span id="updateCheck" class="link">Check for updates</span>
+      <span id="statusText"></span>
     </div>
+    <span id="updateNotice"></span>
     <div class="right">
-      <span id="verTag" class="ver"></span>
       <span id="countText" class="count"></span>
+      <span id="verTag" class="ver"></span>
+      <button id="updateBtn" class="btn-update">Check for updates</button>
     </div>
   </div>
 </div>
@@ -232,13 +271,20 @@
 <script>
   let API=null, META=null, connected=false, searching=false;
   let rows=[], selected=new Set(), sortCol=null, sortDir=1;
-  let updateUrl="";
   const COLS=[
     ["site","Site"],["site_id","Site ID"],["name","Name"],["mac","MAC"],["ip","IP"],
     ["model","Model"],["type","Type"],["status","Status"],["firmware","Firmware"],["uptime","Uptime"]
   ];
   const $=id=>document.getElementById(id);
   function toast(m,e){ const t=$("toast"); t.textContent=m; t.className=(e?"err ":"")+"show"; setTimeout(()=>t.className=t.className.replace("show","").trim(),3400); }
+
+  let currentTheme="dark";
+  function applyTheme(theme){ currentTheme=theme; document.body.classList.toggle("light", theme==="light"); }
+  async function toggleTheme(){ const next=currentTheme==="light"?"dark":"light"; applyTheme(next);
+    if(window.pywebview&&window.pywebview.api) await window.pywebview.api.save_theme(next); }
+  async function initTheme(){ if(!(window.pywebview&&window.pywebview.api))return;
+    try{ const t=await window.pywebview.api.get_theme(); applyTheme(t||"dark"); }catch(e){} }
+  window.addEventListener("pywebviewready", initTheme);
 
   window.addEventListener("pywebviewready", init);
   window.onSearchProgress=function(done,total,phase){ if(searching) $("statusText").textContent=(phase?phase+": ":"")+done+" / "+total+" site(s)"; };
@@ -258,23 +304,29 @@
     $("cancelDel").onclick=()=>$("modal").classList.remove("show");
     $("confirmDel").onclick=doDelete;
     $("debugToggle").onclick=onDebug;
-    $("updateCheck").onclick=()=>checkUpdate(true);
-    $("ubView").onclick=()=>{ if(updateUrl) API.open_url(updateUrl); };
-    $("ubClose").onclick=()=>$("updateBar").classList.remove("show");
+    $("updateBtn").onclick=()=>checkUpdate(true);
+    $("ghLink").onclick=()=>API.open_url("https://github.com/JDE-Projects");
     $("term").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("searchBtn").disabled) onSearch(); });
     $("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") onConn(); });
     checkUpdate(false);   // quiet check on startup; silent when offline or repo private
   }
 
+  let updTimer=null;
+  function showUpdateMsg(html, persist){
+    const u=$("updateNotice"); if(!u) return;
+    if(updTimer){ clearTimeout(updTimer); updTimer=null; }
+    u.innerHTML=html; u.classList.add("show");
+    if(!persist){ updTimer=setTimeout(()=>u.classList.remove("show"), 5000); }
+  }
+  function updDownload(url){ if(url) API.open_url(url); const u=$("updateNotice"); if(u)u.classList.remove("show"); return false; }
+  window.updDownload=updDownload;
   async function checkUpdate(manual){
     const r=await API.check_update(!!manual);
     if(r.ok && r.update){
-      updateUrl=r.url||"";
-      $("ubText").innerHTML="A newer version is available: <b>v"+r.latest+"</b> (you have v"+r.current+").";
-      $("updateBar").classList.add("show");
+      showUpdateMsg('Update available: <a href="#" onclick="return updDownload(\''+(r.url||"")+'\')">v'+r.latest+'</a>', true);
     } else if(manual){
-      if(r.ok && !r.update) toast("You're on the latest version (v"+r.current+").");
-      else toast(r.error||"Could not check for updates.",true);
+      if(r.ok && !r.update) showUpdateMsg("You're on the latest version (v"+r.current+")", false);
+      else showUpdateMsg("Couldn't reach GitHub to check for updates", false);
     }
   }
   function updateHint(){ $("hint").textContent=META.hints[$("field").value]||""; }
