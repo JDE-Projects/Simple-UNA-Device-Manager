@@ -8,6 +8,14 @@ Built by [JDE-Projects](https://github.com/JDE-Projects).
 
 If you enjoyed this project and would like to buy me a coffee, check out my [Ko-fi](https://ko-fi.com/jdeprojects).
 
+## Preview
+
+<p align="center">
+  <img src="screenshots/una-light-dark.png" width="900"
+       alt="Simple UNA Device Manager in dark and light themes">
+  <br><em>Dark and light themes</em>
+</p>
+
 ## Highlights
 - Search all sites at once by MAC (fast two-pass), name, or IP.
 - Sortable results: site, name, MAC, IP, model, type, status, firmware, uptime.
