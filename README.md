@@ -30,7 +30,7 @@ If you enjoyed this project and would like to buy me a coffee, check out my [Ko-
 - Window: pywebview on the Qt backend (PySide6), UI in `simple_una_device_manager-UI.html`.
 
 ## Download and run
-Two ways to get it from the Releases page - pick one:
+Two ways to get it from the [Releases](../../releases) page - pick one:
 - **Installer (recommended):** download `SimpleUNADeviceManager-vX.Y.Z-setup.exe` and
   run it. Installs the app, adds a Start menu shortcut, and can be removed later
   from Add or Remove Programs. Installs just for you by default (no admin); you can
@@ -52,8 +52,8 @@ Simple UNA Device Manager doesn't update itself. The bottom bar has a **Check fo
 Your controller login is never stored, so there's nothing else to carry over.
 
 ## Verify this download (optional)
-This release was built on GitHub from this public source - not on a personal
-machine - and is signed with a build-provenance attestation. To confirm a
+This release was built on GitHub from this public source, not on a personal
+machine, and is signed with a build-provenance attestation. To confirm your
 download is genuine, install the [GitHub CLI](https://cli.github.com) and run:
 
 ```
@@ -96,7 +96,8 @@ pipeline from this repo. You can also check the file against the published
 ## A note on how this was built
 This project was built with AI assistance. The design decisions, feature
 direction, and real-world testing were directed by me. The code was written
-and revised with an AI assistant against that direction.
+and revised with an AI assistant against that direction. Treat it like any
+community tool: review and test it before relying on it.
 
 ## License
 Released under the PolyForm Noncommercial License 1.0.0 (see
