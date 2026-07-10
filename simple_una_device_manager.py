@@ -420,7 +420,14 @@ class Api:
             "status": status, "status_class": STATUS_CLASS.get(status, "off"),
             "firmware": dev.get("version", "N/A"),
             "uptime": self._format_uptime(dev.get("uptime")),
+            "uptime_secs": self._uptime_secs(dev.get("uptime")),
         }
+
+    def _uptime_secs(self, seconds):
+        try:
+            return int(seconds)
+        except (ValueError, TypeError):
+            return 0
 
     def _format_uptime(self, seconds):
         if not seconds:
@@ -439,9 +446,7 @@ class Api:
     def run_search(self, term, field):
         if not self.connected:
             return {"ok": False, "error": "Not connected."}
-        term = (term or "").strip()
-        if not term:
-            return {"ok": False, "error": "Enter a search term."}
+        term = (term or "").strip()  # empty matches everything: "show all"
         field = field if field in SEARCH_FIELDS else "MAC"
         term_lower = term.lower()
         total = len(self.sites)
@@ -579,8 +584,12 @@ class Api:
             return {"ok": False, "error": "Nothing to export."}
         if not self._window:
             return {"ok": False, "error": "No window."}
+        try:
+            dlg = webview.FileDialog.SAVE
+        except AttributeError:  # older pywebview
+            dlg = webview.SAVE_DIALOG
         result = self._window.create_file_dialog(
-            webview.SAVE_DIALOG, save_filename="una_device_export.csv",
+            dlg, save_filename="una_device_export.csv",
             file_types=("CSV file (*.csv)", "All files (*.*)"))
         if not result:
             return {"ok": False, "cancelled": True}

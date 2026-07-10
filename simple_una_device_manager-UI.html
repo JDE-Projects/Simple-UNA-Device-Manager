@@ -82,6 +82,7 @@
   .conn-grid .grow-url{ flex:1 1 320px; min-width:260px; }
   .conn-grid .grow-url input{ width:100%; }
   .conn-field input{ width:180px; }
+  .conn-field input[type=checkbox]{ width:auto; }
   .conn-status{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); padding-bottom:9px; }
   .dot{ width:9px; height:9px; border-radius:50%; background:var(--text-faint); }
   .dot.live{ background:var(--green); animation:pulse 1.8s infinite; }
@@ -217,7 +218,7 @@
       </div>
       <div class="grow">
         <label class="field-label">Search Term</label>
-        <input id="term" type="text" placeholder="MAC, name, or IP (full or partial)" disabled spellcheck="false">
+        <input id="term" type="text" placeholder="MAC, name, or IP (full or partial), empty for all devices" disabled spellcheck="false">
       </div>
       <button id="searchBtn" class="btn-primary" disabled>Search</button>
     </div>
@@ -354,7 +355,7 @@
 
   async function onSearch(){
     if(!connected||searching) return;
-    const term=$("term").value.trim(); if(!term){ return; }
+    const term=$("term").value.trim();
     searching=true; $("searchBtn").disabled=true; $("searchBtn").textContent="Searching...";
     ["deleteBtn","exportBtn","clearBtn"].forEach(i=>$(i).disabled=true);
     $("countText").textContent=""; $("statusText").textContent="Searching...";
@@ -381,7 +382,9 @@
     buildHead();
     if(!rows.length){ $("tableWrap").style.display="none"; $("emptyState").style.display="flex";
       $("emptyState").textContent="No devices matched your search."; updateDelete(); return; }
-    if(sortCol){ const k=sortCol; rows.sort((a,b)=>{ let x=(a[k]||"").toString().toLowerCase(), y=(b[k]||"").toString().toLowerCase(); return x<y?-sortDir:x>y?sortDir:0; }); }
+    if(sortCol){ const k=sortCol; rows.sort((a,b)=>{
+      if(k==="uptime") return ((a.uptime_secs||0)-(b.uptime_secs||0))*sortDir;
+      let x=(a[k]||"").toString().toLowerCase(), y=(b[k]||"").toString().toLowerCase(); return x<y?-sortDir:x>y?sortDir:0; }); }
     const tb=$("tbody"); tb.innerHTML=""; const frag=document.createDocumentFragment();
     rows.forEach((row,idx)=>{
       const tr=document.createElement("tr"); if(selected.has(idx)) tr.className="sel";
