@@ -17,6 +17,7 @@ import os
 # both at build time and at runtime. Set before importing webview/qtpy.
 os.environ.setdefault("QT_API", "pyside6")
 
+import ctypes
 import re
 import sys
 import ssl
@@ -38,7 +39,7 @@ import webview
 
 
 # ───────────────────────── identity ─────────────────────────
-APP_VERSION = "1.2.0"          # version of record; equals the latest release tag (no "v")
+APP_VERSION = "1.3.0"          # version of record; equals the latest release tag (no "v")
 GITHUB_OWNER = "JDE-Projects"
 GITHUB_REPO = "Simple-UNA-Device-Manager"
 RELEASES_PAGE = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases"
@@ -641,7 +642,37 @@ def _on_loaded():
     threading.Timer(max(0.0, 5.0 - (time.time() - _start_time)), _close_splash).start()
 
 
+_mutex_handle = None   # module-level: must live for the process lifetime
+
+def _acquire_single_instance(mutex_name: str) -> bool:
+    # Name convention: "JDE_Simple{Thing}Tool_SingleInstance"
+    # Session-local (no "Global\" prefix): each Windows session (e.g. RDP,
+    # fast user switching) gets its own instance instead of colliding across users.
+    global _mutex_handle
+    try:
+        # use_last_error=True: ctypes.windll's GetLastError() can be clobbered
+        # by ctypes-internal calls, so read the error via ctypes.get_last_error() instead.
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        _mutex_handle = kernel32.CreateMutexW(None, False, mutex_name)
+        return ctypes.get_last_error() != 183   # ERROR_ALREADY_EXISTS
+    except Exception:
+        return True   # fail open: never block launch over a mutex error
+
+def _prompt_second_instance(app_title: str) -> bool:
+    # Native message box only: runs before pywebview/Qt exists, so no Qt dialog is available yet.
+    try:
+        text = f"{app_title} is already running.\n\nOpen a second instance?"
+        MB_YESNO_ICONQUESTION = 0x00000024
+        result = ctypes.windll.user32.MessageBoxW(None, text, app_title, MB_YESNO_ICONQUESTION)
+        return result == 6   # IDYES
+    except Exception:
+        return True   # fail open: if the box can't be shown, launch proceeds
+
 def main():
+    if not _acquire_single_instance("JDE_SimpleUNADeviceManager_SingleInstance"):
+        if not _prompt_second_instance("Simple UNA Device Manager"):
+            sys.exit(0)
+
     if HAS_SPLASH:
         threading.Timer(30.0, _close_splash).start()
     if sys.platform == "win32":
