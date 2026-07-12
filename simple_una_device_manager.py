@@ -608,7 +608,7 @@ class Api:
                     w.writerow([r.get(k, "") for k, _ in cols])
             debug.log("EXPORT", f"{len(rows)} rows -> {path}")
             return {"ok": True, "path": path, "count": len(rows)}
-        except Exception as e:
+        except Exception:
             debug.log("EXPORT failed", traceback.format_exc())
             return {"ok": False, "error": "Could not save the CSV file. Check the location and try again."}
 
