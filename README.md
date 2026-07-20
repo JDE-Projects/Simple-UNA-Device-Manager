@@ -24,6 +24,7 @@ If you enjoyed this project and would like to buy me a coffee, check out my [Ko-
 - Checks the Releases page for a newer version (manual and a quiet check at startup).
 - Optional debug log, off by default, with credentials redacted.
 - Secrets are never saved (memory only, wiped on disconnect).
+- Window position and size are remembered between runs.
 
 ## How it works
 - Backend: Python standard library (urllib) against the controller API.
@@ -47,7 +48,7 @@ first time: More info > Run anyway.
 Simple UNA Device Manager doesn't update itself. The bottom bar has a **Check for updates** button that tells you when a newer release is out; when it does, get the new version from the [Releases](../../releases) page the same way you first installed it.
 
 - **Installer:** download the new `SimpleUNADeviceManager-vX.Y.Z-setup.exe` and run it. It installs over your current copy and keeps your saved light/dark theme preference.
-- **Portable .zip:** download and extract the new `SimpleUNADeviceManager-vX.Y.Z.zip`. To keep your light/dark theme choice, copy `simple_una_device_manager.pref` from the old folder into the new one.
+- **Portable .zip:** download and extract the new `SimpleUNADeviceManager-vX.Y.Z.zip`. To keep your light/dark theme choice and window position and size, copy `simple_una_device_manager.pref` from the old folder into the new one.
 
 Your controller login is never stored, so there's nothing else to carry over.
 

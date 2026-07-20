@@ -321,11 +321,11 @@ class Api:
         except HTTPError as e:
             # 404 = repo still private or no releases yet. Stay quiet.
             debug.log("UPDATE check HTTPError", str(e.code))
-            return {"ok": False, "quiet": True,
+            return {"ok": False,
                     "error": "No published releases found yet."}
         except Exception as e:
             debug.log("UPDATE check failed", str(e))
-            return {"ok": False, "quiet": not manual,
+            return {"ok": False,
                     "error": "Could not reach GitHub to check for updates."}
 
     def open_url(self, url):
@@ -341,7 +341,11 @@ class Api:
     def set_debug(self, enabled):
         ok = debug.set_enabled(enabled)
         debug.log("Debug logging enabled" if enabled and ok else "Debug logging disabled")
-        return {"ok": ok, "enabled": debug.is_enabled()}
+        if not ok:
+            return {"ok": False, "enabled": debug.is_enabled(),
+                    "error": "Could not create the debug log file next to the app. "
+                             "Check that the app's folder is writable."}
+        return {"ok": True, "enabled": debug.is_enabled()}
 
     # ─── theme preference (through the shared prefs store) ───
     def get_theme(self):
@@ -650,7 +654,7 @@ class Api:
                 self._api_request(f"/api/s/{d['site_id']}/cmd/sitemgr",
                                   method="POST",
                                   data={"cmd": "delete-device", "mac": d["mac"]})
-                success.append(d.get("mac"))
+                success.append({"site_id": d.get("site_id"), "mac": d.get("mac")})
                 debug.log("DELETED", f"{d.get('name')} ({d.get('mac')}) @ {d.get('site_id')}")
             except Exception as e:
                 errors.append(f"{d.get('name')} ({d.get('mac')}): {friendly_error(e, 'delete')}")
@@ -756,7 +760,6 @@ def main():
         threading.Timer(30.0, _close_splash).start()
     if sys.platform == "win32":
         try:
-            import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
                 "JDEProjects.SimpleUNADeviceManager")
         except Exception:

@@ -45,6 +45,11 @@ pyinstaller --windowed --onedir --name "Simple UNA Device Manager" ^
   --collect-all qtpy ^
   simple_una_device_manager.py
 echo.
+if errorlevel 1 (
+    echo ERROR: PyInstaller build failed.
+    %PAUSE%
+    exit /b 1
+)
 echo =====================================================
 echo  Done. Your app folder is in:
 echo    dist\Simple UNA Device Manager\

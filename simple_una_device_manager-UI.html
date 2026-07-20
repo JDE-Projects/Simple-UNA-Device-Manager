@@ -52,7 +52,7 @@
   .app-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
   .app-header .title h1{ font-size:22px; font-weight:700; margin:0; letter-spacing:-.01em; }
   .app-header .title .by{ display:block; margin-top:4px; font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--text-dim); }
-  .app-header .title .ghl{ display:inline-block; margin-top:2px; font-family:"JetBrains Mono",monospace; font-size:10.5px; color:var(--accent); text-decoration:none; cursor:pointer; }
+  .app-header .title .ghl{ font-family:"JetBrains Mono",monospace; font-size:10.5px; color:var(--accent); text-decoration:none; cursor:pointer; }
   .app-header .title .ghl:hover{ text-decoration:underline; }
   .theme-btn{ background:transparent; border:1px solid var(--border-2); border-radius:var(--radius-sm);
     width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;
@@ -176,8 +176,7 @@
   <header class="app-header">
     <div class="title">
       <h1>Simple UNA Device Manager</h1>
-      <div class="by">by JDE-Projects</div>
-      <span class="ghl" id="ghLink">github.com/JDE-Projects</span>
+      <div class="by">by <span class="ghl" id="ghLink">JDE-Projects</span></div>
     </div>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">
       <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -277,6 +276,7 @@
     ["model","Model"],["type","Type"],["status","Status"],["firmware","Firmware"],["uptime","Uptime"]
   ];
   const $=id=>document.getElementById(id);
+  const rowKey=r=>(r.site_id||"")+"|"+(r.mac||"");
   function toast(m,e){ const t=$("toast"); t.textContent=m; t.className=(e?"err ":"")+"show"; setTimeout(()=>t.className=t.className.replace("show","").trim(),3400); }
 
   let currentTheme="dark";
@@ -386,11 +386,12 @@
       if(k==="uptime") return ((a.uptime_secs||0)-(b.uptime_secs||0))*sortDir;
       let x=(a[k]||"").toString().toLowerCase(), y=(b[k]||"").toString().toLowerCase(); return x<y?-sortDir:x>y?sortDir:0; }); }
     const tb=$("tbody"); tb.innerHTML=""; const frag=document.createDocumentFragment();
-    rows.forEach((row,idx)=>{
-      const tr=document.createElement("tr"); if(selected.has(idx)) tr.className="sel";
-      tr.onclick=()=>{ if(selected.has(idx)) selected.delete(idx); else selected.add(idx); tr.classList.toggle("sel"); updateDelete(); };
+    rows.forEach(row=>{
+      const key=rowKey(row);
+      const tr=document.createElement("tr"); if(selected.has(key)) tr.className="sel";
+      tr.onclick=()=>{ if(selected.has(key)) selected.delete(key); else selected.add(key); tr.classList.toggle("sel"); updateDelete(); };
       COLS.forEach(([k])=>{ const td=document.createElement("td");
-        if(k==="status"){ td.innerHTML='<span class="st '+(row.status_class||"off")+'">'+(row.status||"")+'</span>'; }
+        if(k==="status"){ const sp=document.createElement("span"); sp.className="st "+(row.status_class||"off"); sp.textContent=row.status||""; td.appendChild(sp); }
         else { td.textContent=row[k]||""; td.className="col-"+k; td.title=row[k]||""; }
         tr.appendChild(td); });
       frag.appendChild(tr);
@@ -398,15 +399,20 @@
     tb.appendChild(frag);
     $("emptyState").style.display="none"; $("tableWrap").style.display="block"; updateDelete();
   }
-  function updateDelete(){ const n=selected.size; const b=$("deleteBtn"); b.disabled=n===0; b.textContent=n>0?("Delete Selected ("+n+")"):"Delete Selected"; }
+  function updateDelete(){ const n=selectedDevices().length; const b=$("deleteBtn"); b.disabled=n===0; b.textContent=n>0?("Delete Selected ("+n+")"):"Delete Selected"; }
 
-  function selectedDevices(){ return [...selected].map(i=>rows[i]).filter(Boolean); }
+  function selectedDevices(){ return rows.filter(r=>selected.has(rowKey(r))); }
 
   function openModal(){
     const devs=selectedDevices(); if(!devs.length) return;
     const list=$("devList"); list.innerHTML="";
-    devs.forEach(d=>{ const div=document.createElement("div");
-      div.innerHTML=d.name+' <span class="mono">'+d.mac+'</span> \u2014 '+d.site+' ['+d.type+', '+d.status+']'; list.appendChild(div); });
+    devs.forEach(d=>{
+      const div=document.createElement("div");
+      div.appendChild(document.createTextNode(d.name+" "));
+      const m=document.createElement("span"); m.className="mono"; m.textContent=d.mac; div.appendChild(m);
+      div.appendChild(document.createTextNode(" \u2014 "+d.site+" ["+d.type+", "+d.status+"]"));
+      list.appendChild(div);
+    });
     $("modal").classList.add("show");
   }
 
@@ -417,8 +423,8 @@
     const payload=devs.map(d=>({site_id:d.site_id, mac:d.mac, name:d.name}));
     const r=await API.delete_devices(payload);
     if(!r.ok){ toast(r.error||"Delete failed",true); return; }
-    const okMacs=new Set(r.success||[]);
-    rows=rows.filter(row=>!okMacs.has(row.mac)); selected=new Set();
+    const okKeys=new Set((r.success||[]).map(s=>(s.site_id||"")+"|"+s.mac));
+    rows=rows.filter(row=>!okKeys.has(rowKey(row))); selected=new Set();
     render();
     $("countText").textContent=rows.length+" device(s)";
     $("clearBtn").disabled=rows.length===0; $("exportBtn").disabled=rows.length===0;
@@ -442,6 +448,7 @@
   }
   async function onDebug(){ const t=$("debugToggle"); const on=!t.classList.contains("on");
     const r=await API.set_debug(on); t.classList.toggle("on",r.enabled);
+    if(on&&!r.enabled){ toast(r.error||"Could not turn on the debug log.",true); return; }
     toast(r.enabled?"Debug log on (writing next to the app)":"Debug log off"); }
 </script>
 </body>
