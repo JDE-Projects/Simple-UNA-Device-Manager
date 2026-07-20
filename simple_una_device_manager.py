@@ -40,7 +40,7 @@ import webview
 
 
 # ───────────────────────── identity ─────────────────────────
-APP_VERSION = "1.4.1"          # version of record; equals the latest release tag (no "v")
+APP_VERSION = "1.4.2"          # version of record; equals the latest release tag (no "v")
 GITHUB_OWNER = "JDE-Projects"
 GITHUB_REPO = "Simple-UNA-Device-Manager"
 RELEASES_PAGE = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases"
