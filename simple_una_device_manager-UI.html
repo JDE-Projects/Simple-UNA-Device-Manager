@@ -116,6 +116,8 @@
   tbody td{ padding:9px 12px; border-bottom:1px solid rgba(32,41,58,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:320px; }
   tbody tr{ cursor:pointer; }
   tbody tr:nth-child(odd){ background:rgba(22,29,42,.4); }
+  /* the dark stripe above is near-black over a white panel, so light mode needs its own weight */
+  body.light tbody tr:nth-child(odd){ background:rgba(22,29,42,.13); }
   tbody tr:hover{ background:rgba(77,214,193,.06); }
   tbody tr.sel{ background:rgba(77,214,193,.16) !important; box-shadow:inset 3px 0 0 var(--accent); }
   td.col-mac, td.col-ip, td.col-firmware, td.col-uptime{ font-family:"JetBrains Mono",monospace; color:var(--text-dim); font-size:11.5px; }
