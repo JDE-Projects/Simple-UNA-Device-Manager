@@ -194,14 +194,42 @@ class DebugLog:
 debug = DebugLog()
 
 
+_REDACT_KEYS = ("password", "passwd", "x_password")
+
+
+def _normalize_key(k):
+    """Fold a key to the form _REDACT_KEYS is written in, so 'Password',
+    'PASSWD', and 'X-Password' are all recognised alongside the lowercase,
+    underscore forms."""
+    return k.lower().replace("-", "_") if isinstance(k, str) else k
+
+
 def redact_payload(payload):
+    """Return a redacted copy of payload. Never mutates the caller's data at
+    any depth. Non-dict payloads pass through unchanged. Recurses into nested
+    dicts and dicts inside lists (API bodies often carry a list of objects);
+    a seen-ids guard along the current path stops a self-referencing
+    structure from recursing forever."""
     if not isinstance(payload, dict):
         return payload
-    out = dict(payload)
-    for k in ("password", "passwd", "x_password"):
-        if k in out:
-            out[k] = "***REDACTED***"
-    return out
+    return _redact(payload, frozenset())
+
+
+def _redact(value, seen):
+    if isinstance(value, dict):
+        if id(value) in seen:
+            return value
+        seen = seen | {id(value)}
+        return {
+            k: "***REDACTED***" if _normalize_key(k) in _REDACT_KEYS else _redact(v, seen)
+            for k, v in value.items()
+        }
+    if isinstance(value, list):
+        if id(value) in seen:
+            return value
+        seen = seen | {id(value)}
+        return [_redact(v, seen) for v in value]
+    return value
 
 
 # ─────────────── plain-language errors ───────────────
