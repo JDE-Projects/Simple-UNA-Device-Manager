@@ -55,23 +55,25 @@ def test_update_error_reason_truncates_unknown_exception():
 
 def test_check_update_returns_newer_release_and_logs_success(monkeypatch):
     calls = []
+    major, minor, patch = map(int, app.APP_VERSION.split("."))
+    newer = f"{major}.{minor}.{patch + 1}"
 
     def fake_urlopen(request, timeout, context):
         assert request.full_url.endswith("/releases/latest")
         assert timeout == 10
         assert context is not None
-        return FakeResponse({"tag_name": "v1.4.3"})
+        return FakeResponse({"tag_name": f"v{newer}"})
 
     monkeypatch.setattr(app, "urlopen", fake_urlopen)
     monkeypatch.setattr(app.debug, "log", lambda *parts: calls.append(parts))
 
     assert app.Api().check_update() == {
         "current": app.APP_VERSION,
-        "version": "1.4.3",
+        "version": newer,
         "update": True,
         "offline": False,
     }
-    assert calls == [("UPDATE check <-", {"latest": "1.4.3", "current": app.APP_VERSION})]
+    assert calls == [("UPDATE check <-", {"latest": newer, "current": app.APP_VERSION})]
 
 
 def test_check_update_returns_current_release(monkeypatch):
