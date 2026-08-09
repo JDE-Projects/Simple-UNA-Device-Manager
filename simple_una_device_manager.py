@@ -19,6 +19,7 @@ os.environ.setdefault("QT_API", "pyside6")
 
 import ctypes
 from ctypes import wintypes
+import errno
 import re
 import sys
 import ssl
@@ -34,6 +35,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.request import (Request, HTTPCookieProcessor, build_opener,
                             HTTPSHandler, urlopen)
 from urllib.error import URLError, HTTPError
+import urllib.error
 from http.cookiejar import CookieJar
 
 import webview
@@ -43,7 +45,6 @@ import webview
 APP_VERSION = "1.4.2"          # version of record; equals the latest release tag (no "v")
 GITHUB_OWNER = "JDE-Projects"
 GITHUB_REPO = "Simple-UNA-Device-Manager"
-RELEASES_PAGE = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases"
 
 
 # ───────────────────────── paths ─────────────────────────
@@ -90,18 +91,59 @@ def save_prefs(prefs: dict) -> bool:
 
 def _win32():
     u = ctypes.windll.user32
-    u.FindWindowW.restype = wintypes.HWND
-    u.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
     u.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
     u.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
                                ctypes.c_int, ctypes.c_int, wintypes.UINT]
     return u
 
 
+def _own_window_handle(title):
+    """Return this process's visible top-level window with an exact title."""
+    try:
+        u = ctypes.windll.user32
+        WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        u.EnumWindows.argtypes = [WNDENUMPROC, wintypes.LPARAM]
+        u.EnumWindows.restype = wintypes.BOOL
+        u.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        u.GetWindowThreadProcessId.restype = wintypes.DWORD
+        u.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+        u.GetWindowTextLengthW.restype = ctypes.c_int
+        u.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        u.GetWindowTextW.restype = ctypes.c_int
+        u.IsWindowVisible.argtypes = [wintypes.HWND]
+        u.IsWindowVisible.restype = wintypes.BOOL
+
+        own_pid = os.getpid()
+        found = {"hwnd": None}
+
+        def _callback(hwnd, lparam):
+            if not u.IsWindowVisible(hwnd):
+                return True
+            pid = wintypes.DWORD()
+            u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            if pid.value != own_pid:
+                return True
+            length = u.GetWindowTextLengthW(hwnd)
+            if length <= 0:
+                return True
+            buf = ctypes.create_unicode_buffer(length + 1)
+            u.GetWindowTextW(hwnd, buf, length + 1)
+            if buf.value != title:
+                return True
+            found["hwnd"] = hwnd
+            return False
+
+        proc = WNDENUMPROC(_callback)
+        u.EnumWindows(proc, 0)
+        return found["hwnd"]
+    except Exception:
+        return None
+
+
 def _save_geometry(win) -> None:
     try:
         u = _win32()
-        hwnd = u.FindWindowW(None, win.title)
+        hwnd = _own_window_handle(win.title)
         if not hwnd:
             return
         r = wintypes.RECT()
@@ -138,7 +180,7 @@ def _restore_geometry(win) -> None:
         if not user32.MonitorFromPoint(point, 0):   # MONITOR_DEFAULTTONULL
             return
         u = _win32()
-        hwnd = u.FindWindowW(None, win.title)
+        hwnd = _own_window_handle(win.title)
         if not hwnd:
             return
         SWP_NOZORDER, SWP_NOACTIVATE = 0x0004, 0x0010
@@ -252,6 +294,44 @@ def _reason_message(reason):
     return "Could not reach the controller. Check the URL, port, and your network."
 
 
+def _update_error_reason(exc: BaseException) -> str:
+    """Return a plain-language reason for a failed GitHub update check."""
+    if isinstance(exc, urllib.error.HTTPError):
+        if exc.code == 403:
+            return "GitHub is rate-limiting update checks from this network. Try again later."
+        if exc.code == 404:
+            return "No published release was found."
+        if 500 <= exc.code < 600:
+            return f"GitHub is having trouble on its end (HTTP {exc.code})."
+        return f"GitHub returned an error (HTTP {exc.code})."
+    if isinstance(exc, json.JSONDecodeError):
+        return ("GitHub returned something unexpected. This often means a proxy "
+                "or a guest wifi sign-in page answered instead.")
+
+    is_url_error = isinstance(exc, urllib.error.URLError)
+    cause = exc.reason if is_url_error and exc.reason is not None else exc
+    if isinstance(cause, ssl.SSLCertVerificationError):
+        return ("GitHub's certificate could not be verified. This usually means "
+                "antivirus or a network filter is inspecting HTTPS traffic.")
+    if isinstance(cause, (ssl.SSLEOFError, ssl.SSLZeroReturnError)):
+        return "The secure connection was cut off during the handshake with GitHub."
+    if isinstance(cause, ssl.SSLError):
+        return "The secure connection to GitHub failed."
+    if isinstance(cause, socket.gaierror):
+        return ("The address for api.github.com could not be looked up. Check "
+                "DNS or the internet connection.")
+    if isinstance(cause, (socket.timeout, TimeoutError)):
+        return "GitHub didn't respond in time."
+    if isinstance(cause, (ConnectionRefusedError, ConnectionResetError)):
+        return "The connection was refused or reset. A firewall or proxy may be blocking it."
+    if isinstance(cause, OSError) and getattr(cause, "errno", None) == errno.ENETUNREACH:
+        return "No network connection."
+    if is_url_error:
+        return "Couldn't reach GitHub. Check the internet connection."
+    text = f"{type(exc).__name__}: {exc}"
+    return text if len(text) <= 120 else text[:117] + "..."
+
+
 def friendly_error(exc, context=""):
     """Return a short, user-facing message. Full detail goes to the debug log."""
     debug.log(f"ERROR detail{(' - ' + context) if context else ''}", traceback.format_exc())
@@ -329,32 +409,25 @@ class Api:
                 "hints": HINT_TEXTS, "version": APP_VERSION}
 
     # ─── update check (GitHub Releases, stdlib only, no token) ───
-    def check_update(self, manual=False):
-        """Compare the latest published release tag to APP_VERSION.
-        Quiet on any failure unless the user asked (manual=True)."""
-        url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
-        debug.log("UPDATE check ->", url)
+    def check_update(self):
+        """Compare the latest published release tag to APP_VERSION."""
+        result = {"current": APP_VERSION, "version": None, "update": False, "offline": False}
         try:
+            url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
             req = Request(url, headers={"Accept": "application/vnd.github+json",
                                         "User-Agent": "Simple-UNA-Device-Manager"})
-            with urlopen(req, timeout=8, context=ssl.create_default_context()) as resp:
+            with urlopen(req, timeout=10, context=ssl.create_default_context()) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             latest = (data.get("tag_name") or "").lstrip("vV").strip()
-            page = data.get("html_url") or RELEASES_PAGE
-            debug.log("UPDATE check <-", {"latest": latest, "current": APP_VERSION})
+            result["version"] = latest
             if latest and _version_gt(latest, APP_VERSION):
-                return {"ok": True, "update": True, "latest": latest,
-                        "current": APP_VERSION, "url": page}
-            return {"ok": True, "update": False, "current": APP_VERSION, "latest": latest}
-        except HTTPError as e:
-            # 404 = repo still private or no releases yet. Stay quiet.
-            debug.log("UPDATE check HTTPError", str(e.code))
-            return {"ok": False,
-                    "error": "No published releases found yet."}
+                result["update"] = True
+            debug.log("UPDATE check <-", {"latest": latest, "current": APP_VERSION})
         except Exception as e:
-            debug.log("UPDATE check failed", str(e))
-            return {"ok": False,
-                    "error": "Could not reach GitHub to check for updates."}
+            result["offline"] = True
+            result["reason"] = _update_error_reason(e)
+            debug.log("UPDATE check failed", f"{type(e).__name__}: {e}")
+        return result
 
     def open_url(self, url):
         """Open a link in the system browser (used by the update banner)."""
@@ -754,6 +827,7 @@ def _on_loaded():
 
 
 _mutex_handle = None   # module-level: must live for the process lifetime
+IS_SECOND_INSTANCE = False
 
 def _acquire_single_instance(mutex_name: str) -> bool:
     # Name convention: "JDE_Simple{Thing}Tool_SingleInstance"
@@ -780,9 +854,17 @@ def _prompt_second_instance(app_title: str) -> bool:
         return True   # fail open: if the box can't be shown, launch proceeds
 
 def main():
+    global IS_SECOND_INSTANCE
+    try:
+        import truststore
+        truststore.inject_into_ssl()
+    except Exception:
+        pass
+
     if not _acquire_single_instance("JDE_SimpleUNADeviceManager_SingleInstance"):
         if not _prompt_second_instance("Simple UNA Device Manager"):
             sys.exit(0)
+        IS_SECOND_INSTANCE = True
 
     if HAS_SPLASH:
         threading.Timer(30.0, _close_splash).start()
@@ -797,15 +879,17 @@ def main():
     window = webview.create_window(
         "Simple UNA Device Manager",
         url=resource_path("simple_una_device_manager-UI.html"),
-        js_api=api, width=1400, height=850, min_size=(1100, 700),
+        js_api=api, width=1400, height=850, min_size=(1000, 700),
         background_color="#0a0e14",
     )
     api.set_window(window)
 
-    window.events.shown += lambda: _restore_geometry(window)
+    if not IS_SECOND_INSTANCE:
+        window.events.shown += lambda: _restore_geometry(window)
 
     def _on_closing():
-        _save_geometry(window)
+        if not IS_SECOND_INSTANCE:
+            _save_geometry(window)
         return True
     window.events.closing += _on_closing
 

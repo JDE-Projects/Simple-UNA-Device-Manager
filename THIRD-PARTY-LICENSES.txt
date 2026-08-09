@@ -13,14 +13,17 @@ release needs.
 # Always bundled (every app)
 PySide6 / Qt      LGPL-3.0       https://www.qt.io/licensing/
 pywebview         BSD-3-Clause   https://github.com/r0x0r/pywebview
+truststore        MIT             https://github.com/sethmlarson/truststore
 Sora (font)       OFL-1.1        https://github.com/sora-xor/sora-font
 JetBrains Mono    OFL-1.1        https://github.com/JetBrains/JetBrainsMono
 
-# This tool imports nothing beyond the standard library, so no per-app
-# components are bundled.
+# Per-app runtime component:
+# truststore lets Python verify update checks through the Windows certificate
+# store when antivirus or network filters add a trusted local root.
 
 Required font notices:
   Sora           Copyright 2019 The Sora Project Authors
   JetBrains Mono Copyright 2020 The JetBrains Mono Project Authors
+  truststore     Copyright 2022 Seth Michael Larson
 
 Full license texts are available at the URLs above.

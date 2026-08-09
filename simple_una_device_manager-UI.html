@@ -49,11 +49,14 @@
   }
   .app{ display:flex; flex-direction:column; height:100vh; padding:16px 18px 10px; gap:12px; }
   .panel{ background:linear-gradient(180deg,var(--panel),var(--bg-2)); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
-  .app-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
-  .app-header .title h1{ font-size:22px; font-weight:700; margin:0; letter-spacing:-.01em; }
-  .app-header .title .by{ display:block; margin-top:4px; font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--text-dim); }
-  .app-header .title .ghl{ font-family:"JetBrains Mono",monospace; font-size:10.5px; color:var(--accent); text-decoration:none; cursor:pointer; }
-  .app-header .title .ghl:hover{ text-decoration:underline; }
+  .app-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+  .app-header .brand{ display:flex; align-items:center; gap:13px; }
+  .app-header .app-glyph{ width:40px; height:40px; border-radius:11px; flex:0 0 auto; display:block; box-shadow:0 0 24px var(--glow); }
+  .app-header .title{ font-size:18px; font-weight:700; letter-spacing:.2px; color:var(--text); line-height:1.25; }
+  .app-header .byline{ font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--text-dim); margin-top:3px; }
+  .app-header .byline a{ color:var(--accent); text-decoration:none; cursor:pointer; }
+  .app-header .byline a:hover{ text-decoration:underline; }
+  .app-header .head-right{ display:flex; align-items:center; gap:12px; }
   .theme-btn{ background:transparent; border:1px solid var(--border-2); border-radius:var(--radius-sm);
     width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center;
     cursor:pointer; color:var(--text-dim); transition:.15s; flex:0 0 auto; }
@@ -138,7 +141,7 @@
   #updateNotice{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--text-dim);
     white-space:nowrap; max-width:50%; overflow:hidden; text-overflow:ellipsis;
-    opacity:0; pointer-events:none; transition:opacity .3s; }
+    opacity:0; pointer-events:none; transition:opacity .5s ease; }
   #updateNotice.show{ opacity:1; pointer-events:auto; }
   #updateNotice a{ color:var(--accent); text-decoration:none; cursor:pointer; }
   #updateNotice a:hover{ text-decoration:underline; }
@@ -161,6 +164,8 @@
   .dev-list div{ font-size:12px; padding:3px 0; color:var(--text); }
   .dev-list .mono{ font-family:"JetBrains Mono",monospace; color:var(--text-dim); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; }
+  #updateErrModal{ position:fixed; inset:0; background:rgba(6,9,14,.78); display:none; align-items:center; justify-content:center; z-index:60; }
+  #updateErrModal.show{ display:flex; }
 
   #toast{ position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--panel-2);
     border:1px solid var(--border-2); color:var(--text); padding:11px 18px; border-radius:var(--radius-sm); font-size:12.5px;
@@ -176,19 +181,24 @@
 <div class="app">
 
   <header class="app-header">
-    <div class="title">
-      <h1>Simple UNA Device Manager</h1>
-      <div class="by">by <span class="ghl" id="ghLink">JDE-Projects</span></div>
+    <div class="brand">
+      <img class="app-glyph" src="simple_una_device_manager.png" alt="">
+      <div>
+        <div class="title">Simple UNA Device Manager</div>
+        <div class="byline">by <a id="ghLink">JDE-Projects</a></div>
+      </div>
     </div>
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4"/>
-        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
-      </svg>
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
-      </svg>
-    </button>
+    <div class="head-right">
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <div class="panel">
@@ -254,6 +264,13 @@
     </div>
   </div>
 </div>
+<div id="updateErrModal">
+  <div class="modal-card">
+    <h3>Couldn't check for updates</h3>
+    <p class="warn-note" id="updateErrMsg"></p>
+    <div class="modal-actions"><button class="btn-ghost" id="closeUpdateErr">Close</button></div>
+  </div>
+</div>
 
 <!-- delete confirmation -->
 <div id="modal">
@@ -278,6 +295,7 @@
     ["model","Model"],["type","Type"],["status","Status"],["firmware","Firmware"],["uptime","Uptime"]
   ];
   const $=id=>document.getElementById(id);
+  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const rowKey=r=>(r.site_id||"")+"|"+(r.mac||"");
   function toast(m,e){ const t=$("toast"); t.textContent=m; t.className=(e?"err ":"")+"show"; setTimeout(()=>t.className=t.className.replace("show","").trim(),3400); }
 
@@ -308,28 +326,48 @@
     $("confirmDel").onclick=doDelete;
     $("debugToggle").onclick=onDebug;
     $("updateBtn").onclick=()=>checkUpdate(true);
+    $("closeUpdateErr").onclick=closeUpdateErrorModal;
     $("ghLink").onclick=()=>API.open_url("https://github.com/JDE-Projects");
     $("term").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("searchBtn").disabled) onSearch(); });
     $("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") onConn(); });
     checkUpdate(false);   // quiet check on startup; silent when offline or repo private
   }
 
-  let updTimer=null;
-  function showUpdateMsg(html, persist){
-    const u=$("updateNotice"); if(!u) return;
+  let updTimer=null, updClearTimer=null;
+  function clearNoticeTimers(){
     if(updTimer){ clearTimeout(updTimer); updTimer=null; }
-    u.innerHTML=html; u.classList.add("show");
-    if(!persist){ updTimer=setTimeout(()=>u.classList.remove("show"), 5000); }
+    if(updClearTimer){ clearTimeout(updClearTimer); updClearTimer=null; }
   }
-  function updDownload(url){ if(url) API.open_url(url); const u=$("updateNotice"); if(u)u.classList.remove("show"); return false; }
-  window.updDownload=updDownload;
+  function fadeNotice(){
+    clearNoticeTimers();
+    const notice=$("updateNotice");
+    updTimer=setTimeout(()=>{
+      notice.classList.remove("show"); updTimer=null;
+      updClearTimer=setTimeout(()=>{ notice.textContent=""; updClearTimer=null; },500);
+    },5000);
+  }
+  function openUpdateErrorModal(reason){ $("updateErrMsg").textContent=reason; $("updateErrModal").classList.add("show"); }
+  function closeUpdateErrorModal(){ $("updateErrModal").classList.remove("show"); }
   async function checkUpdate(manual){
-    const r=await API.check_update(!!manual);
-    if(r.ok && r.update){
-      showUpdateMsg('Update available: <a href="#" onclick="return updDownload(\''+(r.url||"")+'\')">v'+r.latest+'</a>', true);
-    } else if(manual){
-      if(r.ok && !r.update) showUpdateMsg("You're on the latest version (v"+r.current+")", false);
-      else showUpdateMsg("Couldn't reach GitHub to check for updates", false);
+    const btn=$("updateBtn"), notice=$("updateNotice");
+    clearNoticeTimers();
+    if(manual){ btn.disabled=true; btn.textContent="Checking…"; }
+    notice.classList.remove("show"); notice.innerHTML="";
+    try{
+      const r=await API.check_update();
+      if(r && r.update){
+        notice.innerHTML='Update available: <a href="https://github.com/JDE-Projects/Simple-UNA-Device-Manager/blob/main/README.md#updating" target="_blank" rel="noopener">v'+esc(r.version||"")+'</a>';
+        notice.classList.add("show");
+      } else if(manual && r && r.offline){
+        notice.textContent="Couldn't reach GitHub to check for updates."; notice.classList.add("show"); fadeNotice();
+        openUpdateErrorModal(r.reason||"The app couldn't run the update check.");
+      } else if(manual){
+        notice.textContent="You're on the latest version (v"+(r.current||META.version)+")"; notice.classList.add("show"); fadeNotice();
+      }
+    } catch(e){
+      if(manual){ notice.textContent="Couldn't reach GitHub to check for updates."; notice.classList.add("show"); fadeNotice(); openUpdateErrorModal("The app couldn't run the update check."); }
+    } finally {
+      if(manual){ btn.disabled=false; btn.textContent="Check for updates"; }
     }
   }
   function updateHint(){ $("hint").textContent=META.hints[$("field").value]||""; }
