@@ -4,7 +4,7 @@ Search devices across every site on a UniFi Network Application controller by
 MAC, name, or IP, and remove orphaned or unmanageable devices that can't be
 cleared from the UNA web UI. For network admins cleaning up stuck entries.
 
-Built by [JDE-Projects](https://github.com/JDE-Projects).
+Built by [JDE-Projects](https://jde-projects.com), home of the Simple X Tools suite.
 
 If you enjoyed this project and would like to buy me a coffee, check out my [Ko-fi](https://ko-fi.com/jdeprojects).
 
@@ -93,6 +93,7 @@ pipeline from this repo. You can also check the file against the published
 - Deleting a device is permanent and cannot be undone. Only delete devices that
   are orphaned or unmanageable from the UNA web UI. A device that is still
   connected to the network may reappear as pending adoption after deletion.
+- **Network use.** Other than the job you ask of it, this app makes one automatic network call: a check to GitHub for a newer release (at startup and when you press **Check for updates**), which sends only a version request. It collects and sends no personal data, usage data, or analytics.
 
 ## A note on how this was built
 This project was built with AI assistance. The design decisions, feature
