@@ -327,7 +327,7 @@
     $("debugToggle").onclick=onDebug;
     $("updateBtn").onclick=()=>checkUpdate(true);
     $("closeUpdateErr").onclick=closeUpdateErrorModal;
-    $("ghLink").onclick=()=>API.open_url("https://github.com/JDE-Projects");
+    $("ghLink").onclick=()=>API.open_url("https://jde-projects.com");
     $("term").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!$("searchBtn").disabled) onSearch(); });
     $("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") onConn(); });
     checkUpdate(false);   // quiet check on startup; silent when offline or repo private
